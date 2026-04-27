@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Large Model Files (GitHub limit is 100MB)
+*.pth
+*.h5
+*.model
+
+# Datasets
+dataset/
+ct_dataset/
+raw_data/
+battery_exterior_images/
+battery_ct_images/
+classified_dataset/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Factory Control Hub</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --text-main: #f8fafc;
+            --status-ok: #22c55e;
+            --status-warn: #eab308;
+        }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+        /* Sidebar */
+        nav {
+            width: 240px;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-right: 1px solid #334155;
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--accent-color); margin-bottom: 30px; }
+        /* Main Content */
+        main { flex: 1; padding: 30px; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        /* Components */
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background-color: var(--status-ok);
+        }
+        .log-list { font-family: monospace; font-size: 0.9rem; color: #94a3b8; }
+        .btn {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">SF-CORE AI</div>
+        <p>📊 대시보드</p>
+        <p>🏗️ 디지털 트윈</p>
+        <p>🛡️ 보안 설정</p>
+        <p>📈 데이터 분석</p>
+    </nav>
+    <main>
+        <h1>공정 실시간 관제 센터</h1>
+        <div class="grid">
+            <div class="card">
+                <h3>Line 01 가동 상태</h3>
+                <p>현재 상태: <span class="status-badge">정상 가동 중</span></p>
+                <p>가동률: <strong>98.5%</strong></p>
+                <button class="btn" onclick="alert('라인 긴급 정지 모드 작동')">긴급 정지</button>
+            </div>
+            
+            <div class="card">
+                <h3>AI 비전 결함 탐지 (Real-time)</h3>
+                <div class="log-list" id="log-box">
+                    <div>[13:05:22] Item #A402 - 정상</div>
+                    <div>[13:05:24] Item #A403 - 정상</div>
+                    <div style="color: #f87171;">[13:05:27] Item #A404 - 스크래치 결함 감지!</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>에너지 소비량 (FEMS)</h3>
+                <p>현재 전력: 425 kW</p>
+                <div style="width: 100%; background: #334155; height: 10px; border-radius: 5px;">
+                    <div style="width: 65%; background: var(--accent-color); height: 100%; border-radius: 5px;"></div>
+                </div>
+                <p style="font-size: 0.8rem; margin-top: 10px;">전일 대비 5% 감소</p>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px; height: 300px; display: flex; align-items: center; justify-content: center; border: 2px dashed #475569;">
+            <p>Unity WebGL Digital Twin Viewport (Loading...)</p>
+        </div>
+    </main>
+
+    <script>
+        // 간단한 로그 추가 시뮬레이션
+        setInterval(() => {
+            const logBox = document.getElementById('log-box');
+            const time = new Date().toLocaleTimeString();
+            const newLog = document.createElement('div');
+            newLog.innerText = `[${time}] Item #A${Math.floor(Math.random()*1000)} - 분석 완료`;
+            logBox.prepend(newLog);
+            if(logBox.children.length > 5) logBox.lastElementChild.remove();
+        }, 3000);
+    </script>
+</body>
+</html>

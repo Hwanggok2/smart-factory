@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Factory Control Hub (SF-CORE AI)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --text-main: #f8fafc;
+            --status-ok: #22c55e;
+            --status-warn: #eab308;
+            --status-danger: #f87171;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        nav {
+            width: 240px;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        nav p {
+            margin: 15px 0;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.3s;
+        }
+
+        nav p:hover {
+            color: var(--accent-color);
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        /* Components */
+        .card {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background-color: var(--status-ok);
+            color: #000;
+            font-weight: 600;
+        }
+
+        .log-list {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            height: 150px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 2px;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn.danger {
+            background-color: var(--status-danger);
+        }
+
+        /* AI Upload Areas */
+        .upload-zone {
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-color);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .upload-zone p {
+            margin: 10px 0 0;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .upload-zone input {
+            display: none;
+        }
+
+        .chart-container {
+            height: 180px;
+            margin-top: 15px;
+        }
+
+        /* Unified Alert Style */
+        .alert-pulse {
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(248, 113, 113, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">SF-CORE AI</div>
+        <p>📊 실시간 대시보드</p>
+        <p>🏗️ 공정 시뮬레이션</p>
+        <p>👁️ 비전 정밀 검사</p>
+        <p>📈 에너지 리포트</p>
+        <p>⚙️ 시스템 설정</p>
+    </nav>
+    <main>
+        <div class="header-section">
+            <h1>공정 실시간 관제 센터</h1>
+            <div id="connection-status" style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 10px; height: 10px; background: var(--status-ok); border-radius: 50%;"></div>
+                <span style="font-size: 0.9rem; color: #94a3b8;">서버 연결됨 (API: 8000)</span>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Line Status -->
+            <div class="card" id="line-card">
+                <h3><span>⚙️</span> Line 01 가동 상태</h3>
+                <p>가동률: <strong id="operation-rate">98.5%</strong></p>
+                <p>실시간 상태: <span class="status-badge" id="line-status">정상 가동 중</span></p>
+                <div style="margin-top: 20px;">
+                    <button class="btn danger" onclick="toggleEmergency()">긴급 정지</button>
+                    <button class="btn" style="margin-left: 10px;" onclick="resetStats()">통계 초기화</button>
+                </div>
+            </div>
+
+
+            <!-- Vision AI (Anomaly Detection) -->
+            <div class="card" id="vision-ai-card">
+                <h3><span>👁️</span> AI 비전 결함 탐지 (ViT)</h3>
+                <div class="upload-zone" onclick="document.getElementById('vision-input').click()" id="vision-drop">
+                    <img src="https://img.icons8.com/isometric/50/camera.png" alt="vision" style="width: 40px;" />
+                    <p>기계 외관/작동 이미지 업로드</p>
+                    <input type="file" id="vision-input" accept="image/*" onchange="handleVisionUpload(event)">
+                </div>
+                
+                <!-- Auto Inspection Area -->
+                <div id="auto-inspection-area" style="margin-bottom: 15px; display: none;">
+                    <div style="background: #0f172a; border-radius: 12px; padding: 10px; text-align: center; border: 1px solid var(--accent-color);">
+                        <p id="auto-status-text" style="color: var(--accent-color); font-weight: bold; margin-bottom: 10px;">배터리 검사 대기 중...</p>
+                        <img id="auto-image-view" src="" style="max-width: 100%; max-height: 150px; border-radius: 8px; display: none;">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button id="btn-auto-toggle" class="btn" onclick="toggleAutoInspection()" style="flex: 1; background-color: #1e293b; border: 1px solid var(--accent-color); color: var(--accent-color);">
+                        자동 검사 시작
+                    </button>
+                </div>
+
+                <div class="log-list" id="vision-logs">
+                    <!-- Logs will appear here -->
+                </div>
+            </div>
+
+            <!-- Battery CT Analysis (ResNet50) -->
+            <div class="card" id="battery-ai-card">
+                <h3><span>🔋</span> 배터리 CT 결함 탐지 (ResNet)</h3>
+                <div class="upload-zone" onclick="document.getElementById('battery-input').click()" id="battery-drop">
+                    <img src="https://img.icons8.com/isometric/50/battery-level.png" alt="battery" style="width: 40px;" />
+                    <p>배터리 3D X-ray CT 이미지 업로드</p>
+                    <input type="file" id="battery-input" accept="image/*" onchange="handleBatteryUpload(event)">
+                </div>
+
+                <!-- CT Auto Inspection Area -->
+                <div id="ct-auto-inspection-area" style="margin-bottom: 15px; display: none;">
+                    <div style="background: #0f172a; border-radius: 12px; padding: 10px; text-align: center; border: 1px solid var(--accent-color);">
+                        <p id="ct-auto-status-text" style="color: var(--accent-color); font-weight: bold; margin-bottom: 10px;">배터리 CT 검사 대기 중...</p>
+                        <img id="ct-auto-image-view" src="" style="max-width: 100%; max-height: 150px; border-radius: 8px; display: none;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button id="btn-ct-auto-toggle" class="btn" onclick="toggleCTAutoInspection()" style="flex: 1; background-color: #1e293b; border: 1px solid var(--accent-color); color: var(--accent-color);">
+                        CT 자동 검사 시작
+                    </button>
+                </div>
+
+                <div class="log-list" id="battery-logs">
+                    <!-- Logs will appear here -->
+                </div>
+            </div>
+
+            <!-- FEMS (Energy Management) -->
+            <div class="card">
+                <h3><span>⚡</span> 에너지 소비량 (FEMS)</h3>
+                <p>현재 전략 전력: <span id="power-value">425</span> kW</p>
+                <div style="width: 100%; background: #334155; height: 12px; border-radius: 6px; overflow: hidden;">
+                    <div id="power-bar"
+                        style="width: 65%; background: linear-gradient(90deg, #38bdf8, #818cf8); height: 100%; transition: width 0.5s;">
+                    </div>
+                </div>
+                <p style="font-size: 0.8rem; margin-top: 10px; color: #94a3b8;">전일 대비 <span
+                        style="color: var(--status-ok);">▼ 5.2%</span> 효율 개선 중</p>
+            </div>
+
+            <!-- Defect Rate Chart -->
+            <div class="card" style="grid-column: span 2;">
+                <h3><span>📊</span> AI 모델별 결함 탐지율 (실시간)</h3>
+                <div style="height: 200px;">
+                    <canvas id="defectRateChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Digital Twin Mockup -->
+        <div class="card"
+            style="margin-top: 20px; height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #334155; background: #0f172a;">
+            <p style="color: #475569; font-weight: 600;">Unity WebGL Digital Twin Viewport</p>
+            <div class="loader"
+                style="width: 200px; height: 4px; background: #1e293b; border-radius: 2px; margin-top: 10px; overflow: hidden;">
+                <div
+                    style="width: 40%; height: 100%; background: var(--accent-color); animation: load 3s infinite linear;">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        @keyframes load {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(200%);
+            }
+        }
+    </style>
+
+    <script>
+        const API_URL = "http://localhost:8000";
+        let defectRateChart;
+        let stats = {
+            vision: { history: [] },
+            ct: { history: [] }
+        };
+
+        function initDefectChart() {
+            const ctx = document.getElementById('defectRateChart').getContext('2d');
+            defectRateChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [
+                        {
+                            label: '외관 결함 추세 (ViT)',
+                            data: Array(20).fill(0),
+                            borderColor: '#f87171',
+                            backgroundColor: 'rgba(248, 113, 113, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '내부 결함 추세 (CT)',
+                            data: Array(20).fill(0),
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            max: 100, 
+                            ticks: { color: '#94a3b8', font: { size: 10 }, stepSize: 20 }, 
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' } 
+                        },
+                        x: { display: false }
+                    },
+                    plugins: { 
+                        legend: { display: true, labels: { color: '#94a3b8', boxWidth: 12 } }
+                    },
+                    animation: false // 실시간 흐름을 위해 애니메이션 비활성화 (흔들림 방지)
+                }
+            });
+        }
+
+        function updateDefectStats(type, isDefect) {
+            const history = stats[type].history;
+            history.push(isDefect ? 1 : 0);
+            if (history.length > 50) history.shift(); // 전체 이력은 50개까지 유지
+
+            // 최근 10개 데이터를 기준으로 실시간 결함률 계산 (Sliding Window)
+            const windowSize = 10;
+            const recent = history.slice(-windowSize);
+            const rate = (recent.reduce((a, b) => a + b, 0) / recent.length * 100);
+
+            const datasetIndex = type === 'vision' ? 0 : 1;
+            const data = defectRateChart.data.datasets[datasetIndex].data;
+            
+            data.push(rate);
+            if (data.length > 20) data.shift();
+            
+            defectRateChart.update('none'); // 애니메이션 없이 즉시 업데이트하여 전체 흔들림 방지
+        }
+
+
+        // Add Log to Vision Section
+        function addLog(msg, isAlert = false) {
+            const logBox = document.getElementById('vision-logs');
+            const time = new Date().toLocaleTimeString();
+            const log = document.createElement('div');
+            log.className = 'log-entry';
+            if (isAlert) log.style.color = 'var(--status-danger)';
+            log.innerHTML = `[${time}] ${msg}`;
+            logBox.prepend(log);
+            if (logBox.children.length > 8) logBox.lastElementChild.remove();
+        }
+
+
+        // Vision Upload Interaction
+        async function handleVisionUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_URL}/analyze-vision`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.result.defect) {
+                    addLog(`[기계 비전 결함 발생] ${data.result.type} 감지! (${data.result.confidence * 100}%)`, true);
+                    document.getElementById('vision-ai-card').classList.add('alert-pulse');
+                    setTimeout(() => document.getElementById('vision-ai-card').classList.remove('alert-pulse'), 5000);
+                } else {
+                    addLog(`기계 비전 정상 상태 확인됨 (${data.result.confidence * 100}%)`);
+                }
+            } catch (error) {
+                console.error("Analysis failed:", error);
+                alert("서버 연결에 실패했습니다.");
+            }
+        }
+
+        // Add Log to Battery Section
+        function addBatteryLog(msg, isAlert = false) {
+            const logBox = document.getElementById('battery-logs');
+            const time = new Date().toLocaleTimeString();
+            const log = document.createElement('div');
+            log.className = 'log-entry';
+            if (isAlert) log.style.color = 'var(--status-danger)';
+            log.innerHTML = `[${time}] ${msg}`;
+            logBox.prepend(log);
+            if (logBox.children.length > 8) logBox.lastElementChild.remove();
+        }
+
+        // Battery Upload Interaction
+        async function handleBatteryUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_URL}/analyze-battery`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.result.defect) {
+                    addBatteryLog(`[배터리 이상] ${data.result.type} 확률: ${Math.round(data.result.confidence * 100)}%`, true);
+                    document.getElementById('battery-ai-card').classList.add('alert-pulse');
+                    setTimeout(() => document.getElementById('battery-ai-card').classList.remove('alert-pulse'), 5000);
+                } else {
+                    addBatteryLog(`배터리 내부 정상 상태 확인 (${Math.round(data.result.confidence * 100)}%)`);
+                }
+            } catch (error) {
+                console.error("Analysis failed:", error);
+                alert("서버 연결에 실패했습니다. (main.py를 실행했는지 확인하세요)");
+            }
+        }
+
+        function toggleEmergency() {
+            const btn = event.target;
+            if (btn.innerText === "긴급 정지") {
+                btn.innerText = "복구 모드";
+                btn.classList.remove('danger');
+                document.getElementById('line-status').innerText = "긴급 정지됨";
+                document.getElementById('line-status').style.backgroundColor = 'var(--status-danger)';
+            } else {
+                btn.innerText = "긴급 정지";
+                btn.classList.add('danger');
+                document.getElementById('line-status').innerText = "정상 가동 중";
+                document.getElementById('line-status').style.backgroundColor = 'var(--status-ok)';
+            }
+        }
+
+        // Drag & Drop Support
+        function setupDragDrop(zoneId, inputId) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--accent-color)'; });
+            zone.addEventListener('dragleave', () => { zone.style.borderColor = '#475569'; });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.style.borderColor = '#475569';
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    const event = new Event('change');
+                    input.dispatchEvent(event);
+                }
+            });
+        }
+
+        // Initial Data Refresh Simulation
+        setInterval(() => {
+            const power = 400 + Math.floor(Math.random() * 50);
+            document.getElementById('power-value').innerText = power;
+            document.getElementById('power-bar').style.width = (power / 600 * 100) + '%';
+        }, 2000);
+
+        window.onload = () => {
+            initDefectChart();
+            setupDragDrop('vision-drop', 'vision-input');
+            setupDragDrop('battery-drop', 'battery-input');
+            addLog("시스템 기동 완료 - 비전 센서 온라인");
+            addBatteryLog("배터리 CT 검사 모듈(ResNet) 준비 완료");
+        };
+
+        // --- Auto Inspection Logic ---
+        let autoInterval = null;
+        let imageList = [];
+        let shuffledQueue = [];
+
+        function shuffleArray(array) {
+            const newArr = [...array];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        }
+
+        async function toggleAutoInspection() {
+            const btn = document.getElementById('btn-auto-toggle');
+            const area = document.getElementById('auto-inspection-area');
+            const dropZone = document.getElementById('vision-drop');
+
+            if (autoInterval) {
+                // Stop
+                clearInterval(autoInterval);
+                autoInterval = null;
+                btn.innerText = "자동 검사 시작";
+                btn.style.backgroundColor = "#1e293b";
+                area.style.display = "none";
+                dropZone.style.display = "block";
+                return;
+            }
+
+            // Start
+            try {
+                const response = await fetch(`${API_URL}/list-images`);
+                const data = await response.json();
+                imageList = data.images;
+
+                if (imageList.length === 0) {
+                    alert("'battery_exterior_images' 폴더에 이미지가 없습니다. 이미지를 추가해주세요.");
+                    return;
+                }
+
+                // Initialize first cycle
+                shuffledQueue = shuffleArray(imageList);
+                
+                btn.innerText = "자동 검사 정지";
+                btn.style.backgroundColor = "var(--status-danger)";
+                btn.style.color = "white";
+                area.style.display = "block";
+                dropZone.style.display = "none";
+
+                // Start loop
+                runAutoInspectionStep();
+                autoInterval = setInterval(runAutoInspectionStep, 5000);
+
+            } catch (error) {
+                console.error("Failed to start auto inspection:", error);
+                alert("서버 연결 실패 혹은 이미지 목록을 가져오지 못했습니다.");
+            }
+        }
+
+        async function runAutoInspectionStep() {
+            if (imageList.length === 0) return;
+
+            // If queue is empty, start a new cycle
+            if (shuffledQueue.length === 0) {
+                addLog("--- 모든 이미지 검사 완료 (새 사이클 시작) ---");
+                shuffledQueue = shuffleArray(imageList);
+            }
+
+            const filename = shuffledQueue.pop();
+            const statusText = document.getElementById('auto-status-text');
+            const imageView = document.getElementById('auto-image-view');
+
+            // 1. Show status
+            statusText.innerText = `배터리 검사 중... (${filename})`;
+            imageView.src = `${API_URL}/images/${filename}`;
+            imageView.style.display = "inline-block";
+
+            // 2. Perform Analysis
+            try {
+                const imgResponse = await fetch(`${API_URL}/images/${filename}`);
+                const blob = await imgResponse.blob();
+                
+                const formData = new FormData();
+                formData.append('file', blob, filename);
+
+                const analysisResponse = await fetch(`${API_URL}/analyze-vision`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await analysisResponse.json();
+
+                // 3. Update result
+                updateDefectStats('vision', data.result.defect);
+                
+                if (data.result.defect) {
+                    addLog(`[자동 검출] ${filename}: 결함(${data.result.type}) 감지!`, true);
+                    statusText.innerText = "결함 감지됨!";
+                    statusText.style.color = "var(--status-danger)";
+                } else {
+                    addLog(`[자동 검출] ${filename}: 정상`);
+                    statusText.innerText = "정상 확인";
+                    statusText.style.color = "var(--status-ok)";
+                }
+
+                setTimeout(() => {
+                    statusText.style.color = "var(--accent-color)";
+                }, 2000);
+
+            } catch (error) {
+                console.error("Auto analysis failed:", error);
+                statusText.innerText = "분석 에러";
+            }
+        }
+
+        // --- CT Auto Inspection Logic ---
+        let ctAutoInterval = null;
+        let ctImageList = [];
+        let ctShuffledQueue = [];
+
+        async function toggleCTAutoInspection() {
+            const btn = document.getElementById('btn-ct-auto-toggle');
+            const area = document.getElementById('ct-auto-inspection-area');
+            const dropZone = document.getElementById('battery-drop');
+
+            if (ctAutoInterval) {
+                clearInterval(ctAutoInterval);
+                ctAutoInterval = null;
+                btn.innerText = "CT 자동 검사 시작";
+                btn.style.backgroundColor = "#1e293b";
+                area.style.display = "none";
+                dropZone.style.display = "block";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/list-ct-images`);
+                const data = await response.json();
+                ctImageList = data.images;
+
+                if (ctImageList.length === 0) {
+                    alert("'battery_ct_images' 폴더에 이미지가 없습니다.");
+                    return;
+                }
+
+                ctShuffledQueue = shuffleArray(ctImageList);
+                
+                btn.innerText = "CT 자동 검사 정지";
+                btn.style.backgroundColor = "var(--status-danger)";
+                btn.style.color = "white";
+                area.style.display = "block";
+                dropZone.style.display = "none";
+
+                runCTAutoInspectionStep();
+                ctAutoInterval = setInterval(runCTAutoInspectionStep, 5000);
+
+            } catch (error) {
+                console.error("Failed to start CT auto inspection:", error);
+                alert("서버 연결 실패");
+            }
+        }
+
+        async function runCTAutoInspectionStep() {
+            if (ctImageList.length === 0) return;
+
+            if (ctShuffledQueue.length === 0) {
+                addBatteryLog("--- 모든 CT 이미지 검사 완료 (새 사이클 시작) ---");
+                ctShuffledQueue = shuffleArray(ctImageList);
+            }
+
+            const filename = ctShuffledQueue.pop();
+            const statusText = document.getElementById('ct-auto-status-text');
+            const imageView = document.getElementById('ct-auto-image-view');
+
+            statusText.innerText = `배터리 CT 검사 중... (${filename})`;
+            imageView.src = `${API_URL}/ct-images/${filename}`;
+            imageView.style.display = "inline-block";
+
+            try {
+                const imgResponse = await fetch(`${API_URL}/ct-images/${filename}`);
+                const blob = await imgResponse.blob();
+                
+                const formData = new FormData();
+                formData.append('file', blob, filename);
+
+                const analysisResponse = await fetch(`${API_URL}/analyze-battery`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await analysisResponse.json();
+
+                updateDefectStats('ct', data.result.defect);
+
+                if (data.result.defect) {
+                    addBatteryLog(`[자동 CT 검출] ${filename}: 결함 감지!`, true);
+                    statusText.innerText = "내부 결함 감지됨!";
+                    statusText.style.color = "var(--status-danger)";
+                } else {
+                    addBatteryLog(`[자동 CT 검출] ${filename}: 정상`);
+                    statusText.innerText = "내부 정상 확인";
+                    statusText.style.color = "var(--status-ok)";
+                }
+
+                setTimeout(() => {
+                    statusText.style.color = "var(--accent-color)";
+                }, 2000);
+
+            } catch (error) {
+                console.error("CT Auto analysis failed:", error);
+                statusText.innerText = "분석 에러";
+            }
+        }
+    </script>
+</body>
+
+</html>
