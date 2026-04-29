@@ -15,8 +15,6 @@ ENV/
 dataset/
 ct_dataset/
 raw_data/
-battery_exterior_images/
-battery_ct_images/
 classified_dataset/
 
 # IDEs
